@@ -18,11 +18,36 @@ module Sass::Script::Value
     # @param separator [String] See \{List#separator}.
     def initialize(value, keywords, separator)
       super(value, separator)
+
       if keywords.is_a?(Sass::Util::NormalizedMap)
         @keywords = keywords
       else
         @keywords = Sass::Util::NormalizedMap.new(keywords)
       end
+    end
+
+    def merge(other)
+      value = @value
+      keywords = @keywords
+      separator = self.separator
+
+      if other.is_a?(ArgList)
+        # [self] holds the explicit keyword arguments, which take
+        # precedence over those in [other], which come from a
+        # pre-existing ArgList.
+        value += other.to_a
+        keywords = other.keywords.merge(@keywords)
+        separator = other.separator
+      elsif other.is_a?(Map)
+        keywords = Sass::Script::Helpers.arg_hash(other).merge(@keywords)
+      elsif other.is_a?(List)
+        value += other.to_a
+        separator = other.separator
+      else
+        value += other.to_a
+      end
+
+      ArgList.new(value, keywords, separator)
     end
 
     # The keyword arguments attached to this list.
